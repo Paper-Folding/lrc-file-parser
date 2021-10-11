@@ -134,8 +134,8 @@ module.exports = class Lyric {
       const line = lines[i].trim()
       let result = timeExp.exec(line)
       if (result) {
-        const text = line.replace(timeExp, '').trim()
-        if (text || !this.isRemoveBlankLine) {
+        const text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : (line.replace(timeExp, '').trim() || '&nbsp;')
+        if (text) {
           const timeStr = RegExp.$1
           const timeArr = timeStr.split(':')
           if (timeArr.length < 3) timeArr.unshift(0)
@@ -158,8 +158,8 @@ module.exports = class Lyric {
       const line = translationLines[i].trim()
       let result = timeExp.exec(line)
       if (result) {
-        const text = line.replace(timeExp, '').trim()
-        if (text || !this.isRemoveBlankLine) {
+        const text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : (line.replace(timeExp, '').trim() || '&nbsp;')
+        if (text) {
           const timeStr = RegExp.$1
           const targetLine = linesMap[timeStr]
           if (targetLine) targetLine.translation = text
