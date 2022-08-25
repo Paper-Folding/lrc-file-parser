@@ -1,110 +1,56 @@
-const timeExp = /^\[([\d:.]*)\]{1}/g
-const tagRegMap = {
-  title: 'ti',
-  artist: 'ar',
-  album: 'al',
-  offset: 'offset',
-  by: 'by',
-}
-
-// eslint-disable-next-line no-undef
-const getNow = typeof performance == 'object' && performance.now ? performance.now.bind(performance) : Date.now.bind(Date)
-
-// const timeoutTools = {
-//   expected: 0,
-//   interval: 0,
-//   timeoutId: null,
-//   callback: null,
-//   step() {
-//     var dt = getNow() - this.expected // the drift (positive for overshooting)
-//     if (dt > this.interval) {
-//         // something really bad happened. Maybe the browser (tab) was inactive?
-//         // possibly special handling to avoid futile "catch up" run
-//     }
-//     // … // do what is to be done
-
-//     this.callback()
-
-//     this.expected += this.interval
-//     this.timeoutId = setTimeout(() => {
-//       this.step()
-//     }, Math.max(0, this.interval - dt)) // take into account drift
-//   },
-//   start(callback = () => {}, interval = 1000) {
-//     this.callback = callback
-//     this.interval = interval
-//     this.expected = getNow() + interval
-//     this.timeoutId = setTimeout(() => {
-//       this.step()
-//     } ,interval)
-//   },
-//   stop() {
-//     if (this.timeoutId == null) return
-//     clearTimeout(this.timeoutId)
-//     this.timeoutId = null
-//   }
-// }
-
-const timeoutTools = {
-  invokeTime: 0,
-  animationFrameId: null,
-  timeoutId: null,
-  callback: null,
-  thresholdTime: 200,
-
-  run() {
-    this.animationFrameId = window.requestAnimationFrame(() => {
-      this.animationFrameId = null
-      let diff = this.invokeTime - getNow()
-      // console.log('diff', diff)
-      if (diff > 0) {
-        if (diff < this.thresholdTime) return this.run()
-        return this.timeoutId = setTimeout(() => {
-          this.timeoutId = null
-          this.run()
-        }, diff - this.thresholdTime)
-      }
-
-      // console.log('diff', diff)
-      this.callback(diff)
-    })
-  },
-  start(callback = () => { }, timeout = 0) {
-    // console.log(timeout)
-    this.callback = callback
-    this.invokeTime = getNow() + timeout
-
-    this.run()
-  },
-  clear() {
-    if (this.animationFrameId) {
-      window.cancelAnimationFrame(this.animationFrameId)
-      this.animationFrameId = null
-    }
-    if (this.timeoutId) {
-      window.clearTimeout(this.timeoutId)
-      this.timeoutId = null
-    }
-  },
-}
-
-const parseExtendedLyric = (lrcLinesMap, extendedLyric) => {
-  const extendedLines = extendedLyric.split(/\r\n|\n|\r/)
-  for (let i = 0; i < extendedLines.length; i++) {
-    const line = extendedLines[i].trim()
-    let result = timeExp.exec(line)
-    if (result) {
-      const text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : (line.replace(timeExp, '').trim() || '&nbsp;')
-      if (text) {
-        const timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1')
-        const targetLine = lrcLinesMap[timeStr]
-        if (targetLine) targetLine.extendedLyrics.push(text)
-      }
-    }
-  }
-}
-
 module.exports = class Lyric {
+  static timeExp = /^\[([\d:.]*)\]{1}/g
+  static tagRegMap = {
+    title: 'ti',
+    artist: 'ar',
+    album: 'al',
+    offset: 'offset',
+    by: 'by',
+  }
+
+  // eslint-disable-next-line no-undef
+  static getNow = typeof performance == 'object' && performance.now ? performance.now.bind(performance) : Date.now.bind(Date)
+
+  static timeoutTools = {
+    invokeTime: 0,
+    animationFrameId: null,
+    timeoutId: null,
+    callback: null,
+    thresholdTime: 200,
+
+    run() {
+      this.animationFrameId = window.requestAnimationFrame(() => {
+        this.animationFrameId = null
+        let diff = this.invokeTime - Lyric.getNow()
+        if (diff > 0) {
+          if (diff < this.thresholdTime) return this.run()
+          return this.timeoutId = setTimeout(() => {
+            this.timeoutId = null
+            this.run()
+          }, diff - this.thresholdTime)
+        }
+
+        this.callback(diff)
+      })
+    },
+    start(callback = () => { }, timeout = 0) {
+      this.callback = callback
+      this.invokeTime = Lyric.getNow() + timeout
+
+      this.run()
+    },
+    clear() {
+      if (this.animationFrameId) {
+        window.cancelAnimationFrame(this.animationFrameId)
+        this.animationFrameId = null
+      }
+      if (this.timeoutId) {
+        window.clearTimeout(this.timeoutId)
+        this.timeoutId = null
+      }
+    },
+  }
+
   constructor({ lyric = '', extendedLyrics = [], offset = 150, onPlay = function() { }, onSetLyric = function() { }, isRemoveBlankLine = true } = {}) {
     this.lyric = lyric
     this.extendedLyrics = extendedLyrics
@@ -132,8 +78,8 @@ module.exports = class Lyric {
 
   _initTag() {
     this.tags = {}
-    for (let tag in tagRegMap) {
-      const matches = this.lyric.match(new RegExp(`\\[${tagRegMap[tag]}:([^\\]]*)]`, 'i'))
+    for (let tag in Lyric.tagRegMap) {
+      const matches = this.lyric.match(new RegExp(`\\[${Lyric.tagRegMap[tag]}:([^\\]]*)]`, 'i'))
       this.tags[tag] = (matches && matches[1]) || ''
     }
     if (this.tags.offset) {
@@ -151,9 +97,9 @@ module.exports = class Lyric {
     const length = lines.length
     for (let i = 0; i < length; i++) {
       const line = lines[i].trim()
-      let result = timeExp.exec(line)
+      let result = Lyric.timeExp.exec(line)
       if (result) {
-        const text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : (line.replace(timeExp, '').trim() || '&nbsp;')
+        const text = this.isRemoveBlankLine ? line.replace(Lyric.timeExp, '').trim() : (line.replace(Lyric.timeExp, '').trim() || '&nbsp;')
         if (text || !this.isRemoveBlankLine) {
           const timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1')
           const timeArr = timeStr.split(':')
@@ -172,7 +118,7 @@ module.exports = class Lyric {
       }
     }
 
-    for (const lrc of this.extendedLyrics) parseExtendedLyric(linesMap, lrc)
+    for (const lrc of this.extendedLyrics) this._parseExtendedLyric(linesMap, lrc)
     this.lines = Object.values(linesMap)
     this.lines.sort((a, b) => {
       return a.time - b.time
@@ -181,7 +127,7 @@ module.exports = class Lyric {
   }
 
   _currentTime() {
-    return getNow() - this._performanceTime + this._startTime
+    return Lyric.getNow() - this._performanceTime + this._startTime
   }
 
   _findCurLineNum(curTime, startIndex = 0) {
@@ -198,7 +144,6 @@ module.exports = class Lyric {
 
   _refresh() {
     this.curLineNum++
-    // console.log('curLineNum time', this.lines[this.curLineNum].time)
     if (this.curLineNum >= this.maxLine) return this._handleMaxLine()
 
     let curLine = this.lines[this.curLineNum]
@@ -212,7 +157,7 @@ module.exports = class Lyric {
 
       if (this.delay > 0) {
         if (this.isPlay) {
-          timeoutTools.start(() => {
+          Lyric.timeoutTools.start(() => {
             if (!this.isPlay) return
             this._refresh()
           }, this.delay)
@@ -236,9 +181,8 @@ module.exports = class Lyric {
     this.pause()
     this.isPlay = true
 
-    this._performanceTime = getNow() - parseInt(this.tags.offset + this.offset)
+    this._performanceTime = Lyric.getNow() - parseInt(this.tags.offset + this.offset)
     this._startTime = curTime
-    // this._offset = this.tags.offset + this.offset
 
     this.curLineNum = this._findCurLineNum(this._currentTime()) - 1
 
@@ -248,7 +192,7 @@ module.exports = class Lyric {
   pause() {
     if (!this.isPlay) return
     this.isPlay = false
-    timeoutTools.clear()
+    Lyric.timeoutTools.clear()
     if (this.curLineNum === this.maxLine) return
     const curLineNum = this._findCurLineNum(this._currentTime())
     if (this.curLineNum !== curLineNum) {
@@ -258,10 +202,25 @@ module.exports = class Lyric {
   }
 
   setLyric(lyric, extendedLyrics) {
-    // console.log(extendedLyrics)
     if (this.isPlay) this.pause()
     this.lyric = lyric
     this.extendedLyrics = extendedLyrics
     this._init()
+  }
+
+  _parseExtendedLyric(lrcLinesMap, extendedLyric) {
+    const extendedLines = extendedLyric.split(/\r\n|\n|\r/)
+    for (let i = 0; i < extendedLines.length; i++) {
+      const line = extendedLines[i].trim()
+      let result = Lyric.timeExp.exec(line)
+      if (result) {
+        const text = this.isRemoveBlankLine ? line.replace(Lyric.timeExp, '').trim() : (line.replace(Lyric.timeExp, '').trim() || '&nbsp;')
+        if (text) {
+          const timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1')
+          const targetLine = lrcLinesMap[timeStr]
+          if (targetLine) targetLine.extendedLyrics.push(text)
+        }
+      }
+    }
   }
 }

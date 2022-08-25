@@ -18,9 +18,11 @@ return /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 579:
-/***/ (function(module) {
+/***/ ((module) => {
 
-var _this2 = this;
+var _class;
+
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 
 function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
 
@@ -42,117 +44,10 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
 
-function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var timeExp = /^\[([\d:.]*)\]{1}/g;
-var tagRegMap = {
-  title: 'ti',
-  artist: 'ar',
-  album: 'al',
-  offset: 'offset',
-  by: 'by'
-}; // eslint-disable-next-line no-undef
-
-var getNow = (typeof performance === "undefined" ? "undefined" : _typeof(performance)) == 'object' && performance.now ? performance.now.bind(performance) : Date.now.bind(Date); // const timeoutTools = {
-//   expected: 0,
-//   interval: 0,
-//   timeoutId: null,
-//   callback: null,
-//   step() {
-//     var dt = getNow() - this.expected // the drift (positive for overshooting)
-//     if (dt > this.interval) {
-//         // something really bad happened. Maybe the browser (tab) was inactive?
-//         // possibly special handling to avoid futile "catch up" run
-//     }
-//     // … // do what is to be done
-//     this.callback()
-//     this.expected += this.interval
-//     this.timeoutId = setTimeout(() => {
-//       this.step()
-//     }, Math.max(0, this.interval - dt)) // take into account drift
-//   },
-//   start(callback = () => {}, interval = 1000) {
-//     this.callback = callback
-//     this.interval = interval
-//     this.expected = getNow() + interval
-//     this.timeoutId = setTimeout(() => {
-//       this.step()
-//     } ,interval)
-//   },
-//   stop() {
-//     if (this.timeoutId == null) return
-//     clearTimeout(this.timeoutId)
-//     this.timeoutId = null
-//   }
-// }
-
-var timeoutTools = {
-  invokeTime: 0,
-  animationFrameId: null,
-  timeoutId: null,
-  callback: null,
-  thresholdTime: 200,
-  run: function run() {
-    var _this = this;
-
-    this.animationFrameId = window.requestAnimationFrame(function () {
-      _this.animationFrameId = null;
-      var diff = _this.invokeTime - getNow(); // console.log('diff', diff)
-
-      if (diff > 0) {
-        if (diff < _this.thresholdTime) return _this.run();
-        return _this.timeoutId = setTimeout(function () {
-          _this.timeoutId = null;
-
-          _this.run();
-        }, diff - _this.thresholdTime);
-      } // console.log('diff', diff)
-
-
-      _this.callback(diff);
-    });
-  },
-  start: function start() {
-    var callback = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : function () {};
-    var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-    // console.log(timeout)
-    this.callback = callback;
-    this.invokeTime = getNow() + timeout;
-    this.run();
-  },
-  clear: function clear() {
-    if (this.animationFrameId) {
-      window.cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
-
-    if (this.timeoutId) {
-      window.clearTimeout(this.timeoutId);
-      this.timeoutId = null;
-    }
-  }
-};
-
-var parseExtendedLyric = function parseExtendedLyric(lrcLinesMap, extendedLyric) {
-  var extendedLines = extendedLyric.split(/\r\n|\n|\r/);
-
-  for (var i = 0; i < extendedLines.length; i++) {
-    var line = extendedLines[i].trim();
-    var result = timeExp.exec(line);
-
-    if (result) {
-      var text = _this2.isRemoveBlankLine ? line.replace(timeExp, '').trim() : line.replace(timeExp, '').trim() || '&nbsp;';
-
-      if (text) {
-        var timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1');
-        var targetLine = lrcLinesMap[timeStr];
-        if (targetLine) targetLine.extendedLyrics.push(text);
-      }
-    }
-  }
-};
-
-module.exports = /*#__PURE__*/function () {
+module.exports = (_class = /*#__PURE__*/function () {
+  // eslint-disable-next-line no-undef
   function Lyric() {
     var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
         _ref$lyric = _ref.lyric,
@@ -204,8 +99,8 @@ module.exports = /*#__PURE__*/function () {
     value: function _initTag() {
       this.tags = {};
 
-      for (var tag in tagRegMap) {
-        var matches = this.lyric.match(new RegExp("\\[".concat(tagRegMap[tag], ":([^\\]]*)]"), 'i'));
+      for (var tag in Lyric.tagRegMap) {
+        var matches = this.lyric.match(new RegExp("\\[".concat(Lyric.tagRegMap[tag], ":([^\\]]*)]"), 'i'));
         this.tags[tag] = matches && matches[1] || '';
       }
 
@@ -226,10 +121,10 @@ module.exports = /*#__PURE__*/function () {
 
       for (var i = 0; i < length; i++) {
         var line = lines[i].trim();
-        var result = timeExp.exec(line);
+        var result = Lyric.timeExp.exec(line);
 
         if (result) {
-          var text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : line.replace(timeExp, '').trim() || '&nbsp;';
+          var text = this.isRemoveBlankLine ? line.replace(Lyric.timeExp, '').trim() : line.replace(Lyric.timeExp, '').trim() || '&nbsp;';
 
           if (text || !this.isRemoveBlankLine) {
             var timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1');
@@ -256,7 +151,8 @@ module.exports = /*#__PURE__*/function () {
       try {
         for (_iterator.s(); !(_step = _iterator.n()).done;) {
           var lrc = _step.value;
-          parseExtendedLyric(linesMap, lrc);
+
+          this._parseExtendedLyric(linesMap, lrc);
         }
       } catch (err) {
         _iterator.e(err);
@@ -273,7 +169,7 @@ module.exports = /*#__PURE__*/function () {
   }, {
     key: "_currentTime",
     value: function _currentTime() {
-      return getNow() - this._performanceTime + this._startTime;
+      return Lyric.getNow() - this._performanceTime + this._startTime;
     }
   }, {
     key: "_findCurLineNum",
@@ -297,10 +193,9 @@ module.exports = /*#__PURE__*/function () {
   }, {
     key: "_refresh",
     value: function _refresh() {
-      var _this3 = this;
+      var _this = this;
 
-      this.curLineNum++; // console.log('curLineNum time', this.lines[this.curLineNum].time)
-
+      this.curLineNum++;
       if (this.curLineNum >= this.maxLine) return this._handleMaxLine();
       var curLine = this.lines[this.curLineNum];
 
@@ -314,10 +209,10 @@ module.exports = /*#__PURE__*/function () {
 
         if (this.delay > 0) {
           if (this.isPlay) {
-            timeoutTools.start(function () {
-              if (!_this3.isPlay) return;
+            Lyric.timeoutTools.start(function () {
+              if (!_this.isPlay) return;
 
-              _this3._refresh();
+              _this._refresh();
             }, this.delay);
           }
 
@@ -345,9 +240,8 @@ module.exports = /*#__PURE__*/function () {
       if (!this.lines.length) return;
       this.pause();
       this.isPlay = true;
-      this._performanceTime = getNow() - parseInt(this.tags.offset + this.offset);
-      this._startTime = curTime; // this._offset = this.tags.offset + this.offset
-
+      this._performanceTime = Lyric.getNow() - parseInt(this.tags.offset + this.offset);
+      this._startTime = curTime;
       this.curLineNum = this._findCurLineNum(this._currentTime()) - 1;
 
       this._refresh();
@@ -357,7 +251,7 @@ module.exports = /*#__PURE__*/function () {
     value: function pause() {
       if (!this.isPlay) return;
       this.isPlay = false;
-      timeoutTools.clear();
+      Lyric.timeoutTools.clear();
       if (this.curLineNum === this.maxLine) return;
 
       var curLineNum = this._findCurLineNum(this._currentTime());
@@ -370,17 +264,86 @@ module.exports = /*#__PURE__*/function () {
   }, {
     key: "setLyric",
     value: function setLyric(lyric, extendedLyrics) {
-      // console.log(extendedLyrics)
       if (this.isPlay) this.pause();
       this.lyric = lyric;
       this.extendedLyrics = extendedLyrics;
 
       this._init();
     }
+  }, {
+    key: "_parseExtendedLyric",
+    value: function _parseExtendedLyric(lrcLinesMap, extendedLyric) {
+      var extendedLines = extendedLyric.split(/\r\n|\n|\r/);
+
+      for (var i = 0; i < extendedLines.length; i++) {
+        var line = extendedLines[i].trim();
+        var result = Lyric.timeExp.exec(line);
+
+        if (result) {
+          var text = this.isRemoveBlankLine ? line.replace(Lyric.timeExp, '').trim() : line.replace(Lyric.timeExp, '').trim() || '&nbsp;';
+
+          if (text) {
+            var timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1');
+            var targetLine = lrcLinesMap[timeStr];
+            if (targetLine) targetLine.extendedLyrics.push(text);
+          }
+        }
+      }
+    }
   }]);
 
   return Lyric;
-}();
+}(), _defineProperty(_class, "timeExp", /^\[([\d:.]*)\]{1}/g), _defineProperty(_class, "tagRegMap", {
+  title: 'ti',
+  artist: 'ar',
+  album: 'al',
+  offset: 'offset',
+  by: 'by'
+}), _defineProperty(_class, "getNow", (typeof performance === "undefined" ? "undefined" : _typeof(performance)) == 'object' && performance.now ? performance.now.bind(performance) : Date.now.bind(Date)), _defineProperty(_class, "timeoutTools", {
+  invokeTime: 0,
+  animationFrameId: null,
+  timeoutId: null,
+  callback: null,
+  thresholdTime: 200,
+  run: function run() {
+    var _this2 = this;
+
+    this.animationFrameId = window.requestAnimationFrame(function () {
+      _this2.animationFrameId = null;
+
+      var diff = _this2.invokeTime - _class.getNow();
+
+      if (diff > 0) {
+        if (diff < _this2.thresholdTime) return _this2.run();
+        return _this2.timeoutId = setTimeout(function () {
+          _this2.timeoutId = null;
+
+          _this2.run();
+        }, diff - _this2.thresholdTime);
+      }
+
+      _this2.callback(diff);
+    });
+  },
+  start: function start() {
+    var callback = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : function () {};
+    var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    this.callback = callback;
+    this.invokeTime = _class.getNow() + timeout;
+    this.run();
+  },
+  clear: function clear() {
+    if (this.animationFrameId) {
+      window.cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
+    if (this.timeoutId) {
+      window.clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+  }
+}), _class);
 
 /***/ })
 
@@ -404,7 +367,7 @@ module.exports = /*#__PURE__*/function () {
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
