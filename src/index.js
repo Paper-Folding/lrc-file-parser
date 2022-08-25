@@ -88,11 +88,26 @@ const timeoutTools = {
   },
 }
 
+const parseExtendedLyric = (lrcLinesMap, extendedLyric) => {
+  const extendedLines = extendedLyric.split(/\r\n|\n|\r/)
+  for (let i = 0; i < extendedLines.length; i++) {
+    const line = extendedLines[i].trim()
+    let result = timeExp.exec(line)
+    if (result) {
+      const text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : (line.replace(timeExp, '').trim() || '&nbsp;')
+      if (text) {
+        const timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1')
+        const targetLine = lrcLinesMap[timeStr]
+        if (targetLine) targetLine.extendedLyrics.push(text)
+      }
+    }
+  }
+}
 
 module.exports = class Lyric {
-  constructor({ lyric = '', translationLyric = '', offset = 150, onPlay = function () { }, onSetLyric = function () { }, isRemoveBlankLine = true } = {}) {
+  constructor({ lyric = '', extendedLyrics = [], offset = 150, onPlay = function() { }, onSetLyric = function() { }, isRemoveBlankLine = true } = {}) {
     this.lyric = lyric
-    this.translationLyric = translationLyric
+    this.extendedLyrics = extendedLyrics
     this.tags = {}
     this.lines = null
     this.onPlay = onPlay
@@ -101,42 +116,46 @@ module.exports = class Lyric {
     this.curLineNum = 0
     this.maxLine = 0
     this.offset = offset
-    this.isOffseted = false
     this._performanceTime = 0
-    this._performanceOffsetTime = 0
+    this._startTime = 0
     this.isRemoveBlankLine = isRemoveBlankLine
     this._init()
   }
 
   _init() {
     if (this.lyric == null) this.lyric = ''
-    if (this.translationLyric == null) this.translationLyric = ''
+    if (this.extendedLyrics == null) this.extendedLyrics = []
     this._initTag()
     this._initLines()
     this.onSetLyric(this.lines)
   }
 
   _initTag() {
+    this.tags = {}
     for (let tag in tagRegMap) {
       const matches = this.lyric.match(new RegExp(`\\[${tagRegMap[tag]}:([^\\]]*)]`, 'i'))
       this.tags[tag] = (matches && matches[1]) || ''
+    }
+    if (this.tags.offset) {
+      let offset = parseInt(this.tags.offset)
+      this.tags.offset = Number.isNaN(offset) ? 0 : offset
+    } else {
+      this.tags.offset = 0
     }
   }
 
   _initLines() {
     this.lines = []
-    // this.translationLines = []
     const lines = this.lyric.split(/\r\n|\n|\r/)
     const linesMap = {}
-    // const translationLines = this.translationLyric.split('\n')
     const length = lines.length
     for (let i = 0; i < length; i++) {
       const line = lines[i].trim()
       let result = timeExp.exec(line)
       if (result) {
         const text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : (line.replace(timeExp, '').trim() || '&nbsp;')
-        if (text) {
-          const timeStr = RegExp.$1
+        if (text || !this.isRemoveBlankLine) {
+          const timeStr = RegExp.$1.replace(/(\.\d\d)0$/, '$1')
           const timeArr = timeStr.split(':')
           if (timeArr.length < 3) timeArr.unshift(0)
           if (timeArr[2].indexOf('.') > -1) {
@@ -147,25 +166,13 @@ module.exports = class Lyric {
           linesMap[timeStr] = {
             time: parseInt(timeArr[0]) * 60 * 60 * 1000 + parseInt(timeArr[1]) * 60 * 1000 + parseInt(timeArr[2]) * 1000 + parseInt(timeArr[3] || 0),
             text,
+            extendedLyrics: [],
           }
         }
       }
     }
 
-    const translationLines = this.translationLyric.split(/\r\n|\n|\r/)
-    const translationLineLength = translationLines.length
-    for (let i = 0; i < translationLineLength; i++) {
-      const line = translationLines[i].trim()
-      let result = timeExp.exec(line)
-      if (result) {
-        const text = this.isRemoveBlankLine ? line.replace(timeExp, '').trim() : (line.replace(timeExp, '').trim() || '&nbsp;')
-        if (text) {
-          const timeStr = RegExp.$1
-          const targetLine = linesMap[timeStr]
-          if (targetLine) targetLine.translation = text
-        }
-      }
-    }
+    for (const lrc of this.extendedLyrics) parseExtendedLyric(linesMap, lrc)
     this.lines = Object.values(linesMap)
     this.lines.sort((a, b) => {
       return a.time - b.time
@@ -174,12 +181,13 @@ module.exports = class Lyric {
   }
 
   _currentTime() {
-    return getNow() - this._performanceTime + this._performanceOffsetTime
+    return getNow() - this._performanceTime + this._startTime
   }
 
-  _findCurLineNum(curTime) {
+  _findCurLineNum(curTime, startIndex = 0) {
+    if (curTime <= 0) return 0
     const length = this.lines.length
-    for (let index = 0; index < length; index++) if (curTime <= this.lines[index].time) return index === 0 ? 0 : index - 1
+    for (let index = startIndex; index < length; index++) if (curTime <= this.lines[index].time) return index === 0 ? 0 : index - 1
     return length - 1
   }
 
@@ -194,27 +202,32 @@ module.exports = class Lyric {
     if (this.curLineNum >= this.maxLine) return this._handleMaxLine()
 
     let curLine = this.lines[this.curLineNum]
-    let nextLine = this.lines[this.curLineNum + 1]
+
     const currentTime = this._currentTime()
     const driftTime = currentTime - curLine.time
 
     if (driftTime >= 0 || this.curLineNum === 0) {
+      let nextLine = this.lines[this.curLineNum + 1]
       this.delay = nextLine.time - curLine.time - driftTime
+
       if (this.delay > 0) {
-        if (!this.isOffseted && this.delay >= this.offset) {
-          this._performanceOffsetTime += this.offset
-          this.delay -= this.offset
-          this.isOffseted = true
+        if (this.isPlay) {
+          timeoutTools.start(() => {
+            if (!this.isPlay) return
+            this._refresh()
+          }, this.delay)
         }
-        timeoutTools.start(() => {
-          this._refresh()
-        }, this.delay)
         this.onPlay(this.curLineNum, curLine.text)
+        return
+      } else {
+        let newCurLineNum = this._findCurLineNum(currentTime, this.curLineNum + 1)
+        if (newCurLineNum > this.curLineNum) this.curLineNum = newCurLineNum - 1
+        this._refresh()
         return
       }
     }
 
-    this.curLineNum = this._findCurLineNum(currentTime) - 1
+    this.curLineNum = this._findCurLineNum(currentTime, this.curLineNum) - 1
     this._refresh()
   }
 
@@ -223,14 +236,11 @@ module.exports = class Lyric {
     this.pause()
     this.isPlay = true
 
-    this._performanceOffsetTime = 0
-    this._performanceTime = getNow() - curTime
-    if (this._performanceTime < 0) {
-      this._performanceOffsetTime = -this._performanceTime
-      this._performanceTime = 0
-    }
+    this._performanceTime = getNow() - parseInt(this.tags.offset + this.offset)
+    this._startTime = curTime
+    // this._offset = this.tags.offset + this.offset
 
-    this.curLineNum = this._findCurLineNum(curTime) - 1
+    this.curLineNum = this._findCurLineNum(this._currentTime()) - 1
 
     this._refresh()
   }
@@ -238,7 +248,6 @@ module.exports = class Lyric {
   pause() {
     if (!this.isPlay) return
     this.isPlay = false
-    this.isOffseted = false
     timeoutTools.clear()
     if (this.curLineNum === this.maxLine) return
     const curLineNum = this._findCurLineNum(this._currentTime())
@@ -248,11 +257,11 @@ module.exports = class Lyric {
     }
   }
 
-  setLyric(lyric, translationLyric) {
-    // console.log(translationLyric)
+  setLyric(lyric, extendedLyrics) {
+    // console.log(extendedLyrics)
     if (this.isPlay) this.pause()
     this.lyric = lyric
-    this.translationLyric = translationLyric
+    this.extendedLyrics = extendedLyrics
     this._init()
   }
 }
